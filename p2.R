@@ -17,7 +17,7 @@ curr_county <- ""
 curr_ip <- ""
 no_county <- 0
 
-global_flag <- 0
+global_flag <- 1
 
 ui <- dashboardPage(
   dashboardHeader(title = "Air pollution stats in the US",titleWidth = 1000),
@@ -70,95 +70,122 @@ server <- function(input,output,session){
   
   slider_year <- reactive({
     
-  county_input <- trimws(county_search())
-  state <- select_state()
-  
-  if(county_input != curr_ip)
-  {
-    global_flag <<- 0
-    curr_ip <<- county_input
-  }
-  
-  df <- df_list[[(input$year+38-2018)+1]]
-  
-  t_df <- subset(df,State==state)
-  t_df <- t_df[grep(paste("^",county_input,sep=""), t_df$County, ignore.case=T),]
-  counties <- unique(t_df$County)
-  
-  if(length(counties) == 0)
-  {
-    #no county selected
-    print("NO COUNTIES FOUND")
-    no_county <<- 1
-    #updateSelectInput(session,inputId="county","Select County:",choices=c("No counties found"),selected="No counties found")
-  }
-  else
-  {
-    no_county <<- 0
-  }
-
-  if(input$state != curr_state)
-  {
-    curr_state <<- input$state
-    global_flag <<- 0
-  }
-  
-  if(input$year != curr_year)
-  {
-    curr_year <<- input$year
-    global_flag <<- 0
-  }
-  
-  
-  if(global_flag == 0)
-  {
-  updateSelectInput(session,inputId="county","Select County:",choices=counties,selected=counties[1])
-  global_flag <<- 1
-  curr_county <<- counties[1]
-  }
-
-  if(input$county != "" &   global_flag != 1)
-  {
-  curr_county <<- input$county
-  temp_df <- subset(df,County==input$county & State==input$state)
-  }
-  else
-  {
-    temp_df <- subset(df,County==curr_county & State==input$state)
-  }
-  
-  
-
-
-  value1 = c(temp_df[["Good.Days"]],temp_df[["Moderate.Days"]],temp_df[["Unhealthy.for.Sensitive.Groups.Days"]],temp_df[["Unhealthy.Days"]],temp_df[["Very.Unhealthy.Days"]],temp_df[["Hazardous.Days"]])
-  value = value1/temp_df[["Days.with.AQI"]]
-  
-  print(value)
-  
-  if(no_county == 0)
-  {
-  df1 <- data.frame(
-    group = c("Good","Moderate","Unhealthy for sensitive","Unhealthy","Very Unhealthy","Hazardous"),
-    values = value
-  )
-  value1 <- data.frame(
-    group = c("Good","Moderate","Unhealthy for sensitive","Unhealthy","Very Unhealthy","Hazardous"),
-    values = value1
-  )
-  l <- list(df1, value1,no_county)
-  }
-  else
-  {
-    l <- list("","",no_county)
-  }
-  
+    county_input <- trimws(county_search())
+    state <- select_state()
+    
+    if(county_input != curr_ip)
+    {
+      global_flag <<- 4
+      curr_ip <<- county_input
+    }
+    
+    df <- df_list[[(input$year+38-2018)+1]]
+    
+    t_df <- subset(df,State==state)
+    t_df <- t_df[grep(paste("^",county_input,sep=""), t_df$County, ignore.case=T),]
+    counties <- unique(t_df$County)
+    print(input$state)
+    print(input$county)
+    if(length(counties) == 0)
+    {
+      #no county selected
+      print("NO COUNTIES FOUND")
+      no_county <<- 1
+      #updateSelectInput(session,inputId="county","Select County:",choices=c("No counties found"),selected="No counties found")
+    }
+    else
+    {
+      no_county <<- 0
+    }
+    
+    if(input$state != curr_state)
+    {
+      curr_state <<- input$state
+      global_flag <<- 1
+    }
+    
+    if(input$year != curr_year)
+    {
+      curr_year <<- input$year
+      global_flag <<- 2
+    }
+    
+    print(paste("global flag",global_flag))
+    if(global_flag == 1)
+    {
+      updateSelectInput(session,inputId="county","Select County:",choices=counties,selected=counties[1])
+      global_flag <<- 3
+      curr_county <<- counties[1]
+      req(FALSE, cancelOutput=TRUE)
+    }
+    
+    else if(global_flag ==2)
+    {
+      if(curr_county %in% counties)
+      {
+        updateSelectInput(session,inputId="county","Select county:",choices=counties,selected=curr_county)
+        global_flag <<- 3
+      }
+      else
+      {
+        updateSelectInput(session,inputId="county","Select county:",choices=counties,selected=counties[1])
+        global_flag <<- 3
+        req(FALSE, cancelOutput=TRUE)
+      }
+      
+    }
+    else if(global_flag ==4)
+    {
+      updateSelectInput(session,inputId="county","Select county:",choices=counties,selected=counties[1])
+      global_flag <<- 3
+      req(FALSE, cancelOutput=TRUE)
+      
+    }
+    
+    
+    if(input$county != "")
+    {
+      curr_county<<- input$county
+    }
+    if(global_flag == 3)
+    {
+      temp_df <- subset(df,County==curr_county & State==input$state)
+    }
+    else
+    {
+      temp_df <- subset(df,County==curr_county & State==input$state)
+    }
+    
+    
+    
+    
+    value1 = c(temp_df[["Good.Days"]],temp_df[["Moderate.Days"]],temp_df[["Unhealthy.for.Sensitive.Groups.Days"]],temp_df[["Unhealthy.Days"]],temp_df[["Very.Unhealthy.Days"]],temp_df[["Hazardous.Days"]])
+    value = value1/temp_df[["Days.with.AQI"]]
+    
+    
+    if(no_county == 0)
+    {
+      df1 <- data.frame(
+        group = c("Good","Moderate","Unhealthy for sensitive","Unhealthy","Very Unhealthy","Hazardous"),
+        values = value
+      )
+      value1 <- data.frame(
+        group = c("Good","Moderate","Unhealthy for sensitive","Unhealthy","Very Unhealthy","Hazardous"),
+        values = value1
+      )
+      l <- list(df1, value1,no_county)
+    }
+    else
+    {
+      l <- list("","",no_county)
+    }
+    
   })
   
   output$aqi_bar <- renderPlot({
-  
     if( (slider_year())[3] == 0)
     {
-    ggplot(data=(slider_year())[[1]],aes(x="",y=values, fill=group)) + geom_bar(width = 1, stat = "identity")
+      ggplot(data=(slider_year())[[1]],aes(x="",y=values, fill=group)) + geom_bar(width = 1, stat = "identity")
     }
     else
     {
@@ -168,10 +195,9 @@ server <- function(input,output,session){
   })
   
   output$aqi_pie <- renderPlot({
-    print( paste("hello", (slider_year())[3] ))
     if((slider_year())[3]== 0)
     {
-    ggplot(data=(slider_year())[[1]],aes(x="",y=values, fill=group)) + geom_bar(width = 1, stat = "identity")+ coord_polar("y", start=0)
+      ggplot(data=(slider_year())[[1]],aes(x="",y=values, fill=group)) + geom_bar(width = 1, stat = "identity")+ coord_polar("y", start=0)
     }
     else
     {
@@ -181,9 +207,10 @@ server <- function(input,output,session){
   })
   
   output$aqi_table <- renderTable({
+    
     if((slider_year())[3] == 0)
     {
-    (slider_year())[[2]]
+      (slider_year())[[2]]
     }
     else
     {
@@ -193,6 +220,6 @@ server <- function(input,output,session){
       emp1
     }
   })
-
+  
 }
 shinyApp(ui,server)
