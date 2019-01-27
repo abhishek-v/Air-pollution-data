@@ -67,13 +67,12 @@ server <- function(input,output,session){
   
   
   #print(slider_year())
-    print(((input$year+38-2018)+1))
   df <- df_list[[(input$year+38-2018)+1]]
   #FOLLOWING LINE HAS TO BE CHANGED TO BE MADE DYNAMIC
   
   t_df <- subset(df,State==state)
   counties <- unique(t_df$County)
-  print(input$year)
+  print(input$state)
   print(input$county)
   if(input$state != curr_state)
   {
@@ -92,12 +91,17 @@ server <- function(input,output,session){
   updateSelectInput(session,inputId="county","Select State:",choices=counties,selected=counties[1])
   global_flag <<- 1
   curr_county <<- counties[1]
+  req(FALSE, cancelOutput=TRUE)
+  }
+  
+  if(input$county != "")
+  {
+    curr_county = input$county
   }
 
-  if(input$county != "" &   global_flag != 1)
+  if(global_flag == 1)
   {
-  curr_county <<- input$county
-  temp_df <- subset(df,County==input$county & State==input$state)
+  temp_df <- subset(df,County==curr_county & State==input$state)
   }
   else
   {
@@ -107,7 +111,6 @@ server <- function(input,output,session){
   value1 = c(temp_df[["Good.Days"]],temp_df[["Moderate.Days"]],temp_df[["Unhealthy.for.Sensitive.Groups.Days"]],temp_df[["Unhealthy.Days"]],temp_df[["Very.Unhealthy.Days"]],temp_df[["Hazardous.Days"]])
   value = value1/temp_df[["Days.with.AQI"]]
   
-  print(value)
   df1 <- data.frame(
     group = c("Good","Moderate","Unhealthy for sensitive","Unhealthy","Very Unhealthy","Hazardous"),
     values = value
@@ -119,14 +122,14 @@ server <- function(input,output,session){
   l <- list(df1, value1)
   })
 
-  output$aqi_bar <- renderPlot({
-    ggplot(data=(slider_year())[[1]],aes(x="",y=values, fill=group)) + geom_bar(width = 1, stat = "identity")
-    
-  })
-  
-  output$aqi_pie <- renderPlot({
-    ggplot(data=(slider_year())[[1]],aes(x="",y=values, fill=group)) + geom_bar(width = 1, stat = "identity")+ coord_polar("y", start=0)
-  })
+  # output$aqi_bar <- renderPlot({
+  #   ggplot(data=(slider_year())[[1]],aes(x="",y=values, fill=group)) + geom_bar(width = 1, stat = "identity")
+  #   
+  # })
+  # 
+  # output$aqi_pie <- renderPlot({
+  #   ggplot(data=(slider_year())[[1]],aes(x="",y=values, fill=group)) + geom_bar(width = 1, stat = "identity")+ coord_polar("y", start=0)
+  # })
   
   output$aqi_table <- renderTable({(slider_year())[[2]]})
 }
