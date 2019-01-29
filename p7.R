@@ -1,5 +1,6 @@
 library("shinydashboard")
 library(ggplot2)
+library(leaflet)
 
 #Read in data from files
 setwd("./data")
