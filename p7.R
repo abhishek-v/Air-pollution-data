@@ -1,5 +1,6 @@
 library("shinydashboard")
 library(ggplot2)
+library(leaflet)
 
 #Read in data from files
 setwd("./data")
@@ -29,6 +30,15 @@ for(state in states)
 }
 names(master_states) <- states
 
+#get data for longitudes and latitudes
+map_df <- read.csv("../aqs_sites.csv")
+# names(map_df) <- sub(" ", ".", names(map_df))
+reqd <- c("Latitude","Longitude","County.Name","State.Name")
+#drop all columns except these
+map_df <- map_df[,reqd]
+
+print(names(map_df))
+
 # if("Autauga" %in% master_states[["Alabama"]])
 # {
 #   print("yes")
@@ -47,6 +57,7 @@ curr_year <- 2018 #hard coded initial value
 curr_county <- ""
 curr_ip <- ""
 no_county <- 0
+map_init <- 0
 
 global_flag <- 1
 
@@ -65,6 +76,9 @@ ui <- dashboardPage(
         title="Select County:",
         selectInput(inputId = "county","Select County:",choices=NULL),
         textInput(inputId="search","Search county:")
+      ),
+      box(
+        leafletOutput("map")
       ),
       box(
         title = "Controls",
@@ -90,6 +104,7 @@ server <- function(input,output,session){
   
   #slider_year <- reactive({((as.numeric(input$year)-2018)+1)})
   
+
   
   select_state <- reactive({
     state <- input$state
@@ -100,6 +115,15 @@ server <- function(input,output,session){
   })
   
   slider_year <- reactive({
+    
+    
+    if(map_init == 0)
+    {
+      output$map <- renderLeaflet({
+      #set default map zoomed to the center of the USA
+      m <- leaflet() %>% addTiles() %>% setView(lat=41.850033,lng=-100.6500523,zoom=4.2)
+      })
+    }
     
     county_input <- trimws(county_search())
     state <- select_state()
@@ -155,14 +179,25 @@ server <- function(input,output,session){
       global_flag <<- 2
     }
     
+    
+    
     print(paste("global flag",global_flag))
     if(global_flag == 1)
     {
       print(counties)
+      if(input$county %in% counties)
+      {
+        updateSelectInput(session,inputId="county","Select County:",choices=counties,selected=input$county)
+        global_flag <<-3
+      }
+      else
+      {
       updateSelectInput(session,inputId="county","Select County:",choices=counties,selected=counties[1])
-      global_flag <<- 3
-      curr_county <<- counties[1]
-      req(FALSE, cancelOutput=TRUE)
+        global_flag <<- 3
+        curr_county <<- counties[1]
+        req(FALSE, cancelOutput=TRUE)
+      }
+
     }
     
     else if(global_flag ==2)
@@ -180,12 +215,10 @@ server <- function(input,output,session){
       }
       
     }
-    else if(global_flag ==4)
+    if(global_flag ==4)
     {
       updateSelectInput(session,inputId="county","Select county:",choices=counties,selected=counties[1])
       global_flag <<- 3
-      req(FALSE, cancelOutput=TRUE)
-      
     }
     
     else if(global_flag == 5)
@@ -200,6 +233,39 @@ server <- function(input,output,session){
     {
       curr_county<<- input$county
     }
+    
+    if(no_county != 1)
+    {
+      d <- subset(map_df, County.Name==curr_county & State.Name==curr_state & Latitude!=0 & Longitude!=0)
+      
+      if(is.data.frame(d) && nrow(d)!=0)
+      {
+        lat_a <- d$Latitude[1]
+        lng_a <- d$Longitude[1]
+        content <- paste(input$county)
+        output$map <- renderLeaflet({
+          #set default map zoomed to the center of the USA
+          m <- leaflet() %>% addTiles() %>% setView(lat=lat_a,lng=lng_a,zoom=6) %>% addPopups(lng=lng_a, lat=lat_a, content)
+        })
+      }
+      else
+      {
+        output$map <- renderLeaflet({
+          #set default map zoomed to the center of the USA
+          m <- leaflet() %>% addTiles() %>% setView(lat=41.850033,lng=-100.6500523,zoom=4)
+        })
+      }
+      
+    }
+    else
+    {
+      output$map <- renderLeaflet({
+        #set default map zoomed to the center of the USA
+        m <- leaflet() %>% addTiles() %>% setView(lat=41.850033,lng=-100.6500523,zoom=4)
+      })
+    }
+    
+    
     if(global_flag == 3)
     {
       temp_df <- subset(df,County==curr_county & State==input$state)
