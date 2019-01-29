@@ -185,10 +185,19 @@ server <- function(input,output,session){
     if(global_flag == 1)
     {
       print(counties)
+      if(input$county %in% counties)
+      {
+        updateSelectInput(session,inputId="county","Select County:",choices=counties,selected=input$county)
+        global_flag <<-3
+      }
+      else
+      {
       updateSelectInput(session,inputId="county","Select County:",choices=counties,selected=counties[1])
-      global_flag <<- 3
-      curr_county <<- counties[1]
-      req(FALSE, cancelOutput=TRUE)
+        global_flag <<- 3
+        curr_county <<- counties[1]
+        req(FALSE, cancelOutput=TRUE)
+      }
+
     }
     
     else if(global_flag ==2)
