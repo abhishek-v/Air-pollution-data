@@ -1,0 +1,13 @@
+<nbb
+App information:
+</b>
+<p><b>Author name: </b>Abhishek Vasudevan <br/>
+<b>Email:</b> avasud8@uic.edu<br/>
+<b>Data used:</b> This app displays Air Quality data obtained from <a href="https://aqs.epa.gov/aqsweb/airdata/download_files.html">the US Environmental Protection Agency's website. (EPA)</a>
+The following packages were used for building this app:<br/>
+<ul>
+<li>Shiny dashboard</li>
+<li>ggplot2: For all graphs</li>
+<li>leaflet: For displaying the map</li>
+<li>reshape2: For merging dataframes and create graph with multiple lines</li>
+</ul>
